@@ -1,7 +1,7 @@
-const CACHE_NAME = 'mon-site-cache-v2';
+const CACHE_NAME = 'mon-site-cache-v3';
 const ASSETS_TO_CACHE = [
     '/',
-    '/index.html',
+    '/index.html?v=2',
     '/script.js',
     '/style.css'
 ];
