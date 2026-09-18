@@ -52,7 +52,7 @@ document.getElementById("importer").addEventListener('change', async function(ev
     }
     sauvegarderPartie();
 });
-}; 
+}); 
 // Sauvegarde
 function sauvegarderPartie() {
     localStorage.setItem('gravityRip_joueurs', JSON.stringify(joueurs));
