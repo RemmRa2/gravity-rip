@@ -1,42 +1,84 @@
-const CACHE_NAME = 'mon-site-cache-v3';
-const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html?v=2',
-    '/script.js',
-    '/style.css'
+const CACHE_NAME = 'gravity-rip-cache-v4';
+const APP_SHELL = [
+    './',
+    './index.html',
+    './script.js',
+    './style.css',
+    './sws.js',
+    './sw.js'
 ];
 
-// Installation du Service Worker et mise en cache des fichiers
+// Cache the app shell only after every required file is available.
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(ASSETS_TO_CACHE);
-        })
+        caches.open(CACHE_NAME)
+            .then((cache) => cache.addAll(APP_SHELL))
+            .then(() => self.skipWaiting())
     );
-    self.skipWaiting();
 });
 
-// Activation et nettoyage des anciens caches
+// Remove caches from older versions, then take control of open pages.
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((keys) => {
-            return Promise.all(
-                keys.map((key) => {
-                    if (key !== CACHE_NAME) {
-                        return caches.delete(key);
-                    }
-                })
-            );
-        })
+        caches.keys()
+            .then((keys) => Promise.all(
+                keys
+                    .filter((key) => key !== CACHE_NAME)
+                    .map((key) => caches.delete(key))
+            ))
+            .then(() => self.clients.claim())
     );
-    self.clients.claim();
 });
 
-// Interception des requÃªtes rÃ©seau (Mode hors-ligne basique)
+// Keep external requests, non-GET requests, and browser-only schemes untouched.
 self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            return cachedResponse || fetch(event.request);
-        })
-    );
+    const requestUrl = new URL(event.request.url);
+
+    if (
+        event.request.method !== 'GET' ||
+        requestUrl.origin !== self.location.origin ||
+        !['http:', 'https:'].includes(requestUrl.protocol)
+    ) {
+        return;
+    }
+
+    event.respondWith((async () => {
+        const cachedResponse = await caches.match(event.request);
+
+        // Prefer the network for navigations so normal reloads receive updates.
+        if (event.request.mode === 'navigate') {
+            try {
+                return await fetch(event.request);
+            } catch {
+                return cachedResponse || caches.match('./index.html');
+            }
+        }
+
+        // App assets can be served from cache and refreshed in the background.
+        if (cachedResponse) {
+            event.waitUntil(
+                fetch(event.request)
+                    .then((response) => {
+                        if (response.ok) {
+                            return caches.open(CACHE_NAME)
+                                .then((cache) => cache.put(event.request, response));
+                        }
+                    })
+                    .catch(() => undefined)
+            );
+            return cachedResponse;
+        }
+
+        try {
+            const response = await fetch(event.request);
+            if (response.ok) {
+                const cache = await caches.open(CACHE_NAME);
+                await cache.put(event.request, response.clone());
+            }
+            return response;
+        } catch (error) {
+            // Preserve the normal network error for uncached resources.
+            throw error;
+        }
+    })());
 });
