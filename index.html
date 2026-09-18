@@ -1,0 +1,161 @@
+<!DOCTYPE HTML>
+<html lang="fr">
+<head>
+    <title>Gestionnaire de Gravity Rip en ligne pour GM</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="robots" content="noindex, nofollow"/>
+    <meta name="description" content="Un gestionnaire de gravity rip pour les Game Masters."/> 
+    <script src='sws.js'></script>
+    <link rel="stylesheet" href="tailwind.css"/>
+    <script src="script.js?v=1.5"></script>
+</head>
+<body class="h-screen flex flex-col bg-gray-100">
+
+    <header class="w-full h-20 bg-orange-800 flex items-center px-6 shadow-md shrink-0 justify-between gap-4">
+    <h1 class="text-white text-lg text-xl font-bold tracking-tight">
+        Gestionnaire de Gravity Rip pour GM
+    </h1>
+    
+    <!-- Conteneur des boutons parfaitement alignés -->
+    <div class="flex gap-3 items-center navbar-actions"> 
+        
+        <!-- Bouton Ouvrir (Importer) -->
+        <label id="justemarge" class="flex items-center justify-center gap-2 h-10 min-w-[160px] bg-slate-700 hover:bg-slate-600 active:bg-slate-900 text-white font-semibold text-xs tracking-wider uppercase px-4 rounded-lg shadow-sm border border-slate-600/50 transition-all duration-150 cursor-pointer select-none  ">
+            📂 Ouvrir (.json)
+            <input type="file" id="importer" style="display: none;" accept=".json">
+        </label>
+
+        <!-- Bouton Télécharger (Exporter) -->
+        <button id="export-btn" 
+                class="flex items-center justify-center gap-2 h-10 min-w-[160px] bg-slate-700 hover:bg-slate-600 active:bg-slate-900 text-white font-semibold text-xs tracking-wider uppercase px-4 rounded-lg shadow-sm border border-slate-600/50 transition-all duration-150 cursor-pointer select-none" 
+                onclick="telechargerJoueurs()">
+            💾 Exporter la partie
+        </button>
+        
+    </div>
+</header>
+
+    <div class="flex flex-1 h-screen">
+
+        <aside class="w-1/4 max-w-xs bg-white border-r border-gray-200 p-6 flex flex-col shadow-sm overflow-hidden">
+            <div class="flex-1 overflow-y-auto pr-1">
+                <h2 class="text-gray-400 text-xs uppercase font-bold mb-6 tracking-widest">Configuration</h2>
+
+                  <!-- Un label propre pour le Nom -->
+                  <label for="nomJoueur" class="block text-sm font-semibold text-gray-700 mb-2">Nom du joueur</label>
+                    <input type="text" id="nomJoueur"
+                        class="w-full border border-gray-300 rounded-lg h-10 px-3 text-sm mb-4 outline-none focus:ring-2 focus:ring-blue-600 transition-all"
+                        placeholder="Nom du joueur ici...">
+
+                  <!-- Un label dédié pour le Classement (sans accent, pour correspondre à l'ID) -->
+                  <label for="classementDepart" class="block text-sm font-semibold text-gray-700 mb-2">Classement de départ</label>
+                  <input type="number" id="classementDepart" min="1" max="20"
+                      class="w-full border border-gray-300 rounded-lg h-10 px-3 text-sm mb-4 outline-none focus:ring-2 focus:ring-indigo-600 transition-all"
+                      placeholder="Classement de départ (1-20)">
+
+                <label for="couleurCellule" class="block text-xs font-semibold text-gray-500 mb-1">Couleur de la cellule</label>
+                <input type="color" id="couleurCellule" value="#ffffff"
+                    class="w-full h-10 rounded-lg border border-gray-300 cursor-pointer mb-6 px-1">
+                <label for="typeJoueur" class="block text-xs font-semibold text-gray-500 mb-1">Type du joueur</label>
+                <select id="typeJoueur" class="w-full h-10 rounded-lg border border-gray-300 cursor-pointer mb-6 px-1">
+                  <option value="NPC">NPC</choice>
+                  <option value="Joueur" selected>Joueur</choice>
+                </select>
+                
+
+                <button onclick="ajouterJoueur();" class="bg-slate-800 w-full hover:bg-slate-700 py-3 rounded-lg text-white font-bold text-sm transition-colors mb-4">
+                    AJOUTER
+                </button>
+
+                <div class="uppercase text-[11px] text-gray-500 font-bold mb-3">
+                    Joueurs : <span id="nbJoueurs" class="text-indigo-600">0</span>
+                </div>
+
+                <div id="listeJoueurs" class="flex flex-col gap-2 overflow-y-auto max-h-32 mb-2"></div>
+            </div>
+
+            <div class="pt-2 border-t border-gray-100 shrink-0">
+                <button onclick="nouvellePartie();" class="w-full border border-red-500 text-red-500 hover:bg-red-50 py-2 rounded-lg font-semibold text-xs transition-colors tracking-wide uppercase">
+                    🔄 Nouvelle Partie
+                </button>
+            </div>
+        </aside>
+
+        <main class="flex-1 p-8 overflow-auto" id="main">
+            <table class="w-full border-separate border-spacing-x-4 border-spacing-y-3" id="classement">
+                <thead>
+                    <tr class="text-gray-400 text-xs uppercase tracking-tighter">
+                        <th class="pb-2 pl-2">Pos</th>
+                        <th class="pb-2">Nom</th>
+                        <th class="pb-2">Pos</th>
+                        <th class="pb-2">Nom</th>
+                        <th class="pb-2">Pos</th>
+                        <th class="pb-2">Nom</th>
+                        <th class="pb-2">Pos</th>
+                        <th class="pb-2">Nom</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm font-medium">
+                    <!-- Ligne 1 : 1|nom|10|11|20 -->
+                    <tr class="h-16">
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">1</td>
+                        <td id="1e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">10</td>
+                        <td id="10e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">11</td>
+                        <td id="11e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">20</td>
+                        <td id="20e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                    </tr>
+                    <!-- Ligne 2 : 2|nom|9|12|19 -->
+                    <tr class="h-16">
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">2</td>
+                        <td id="2e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">9</td>
+                        <td id="9e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">12</td>
+                        <td id="12e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">19</td>
+                        <td id="19e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                    </tr>
+                    <!-- Ligne 3 : 3|nom|8|13|18 -->
+                    <tr class="h-16">
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">3</td>
+                        <td id="3e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">8</td>
+                        <td id="8e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">13</td>
+                        <td id="13e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">18</td>
+                        <td id="18e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                    </tr>
+                    <!-- Ligne 4 : 4|nom|7|14|17 -->
+                    <tr class="h-16">
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">4</td>
+                        <td id="4e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">7</td>
+                        <td id="7e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">14</td>
+                        <td id="14e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">17</td>
+                        <td id="17e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                    </tr>
+                    <!-- Ligne 5 : 5|nom|6|15|16 -->
+                    <tr class="h-16">
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">5</td>
+                        <td id="5e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">6</td>
+                        <td id="6e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">15</td>
+                        <td id="15e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                        <td class="bg-white px-4 rounded-l-xl border-y border-l border-gray-200 text-gray-400 w-12 text-center">16</td>
+                        <td id="16e" class="bg-white px-4 rounded-r-xl border-y border-r border-gray-200 w-1/4 shadow-sm italic text-gray-300">En attente...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </main>
+    </div>
+
+</body>
+</html>
